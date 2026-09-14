@@ -6,8 +6,10 @@
 # Python
 __pycache__/
 *.py[cod]
+*.egg-info/
 .venv/
 venv/
+.pytest_cache/
 
 # Generated experiment material (kept locally unless deliberately released)
 data/raw/
