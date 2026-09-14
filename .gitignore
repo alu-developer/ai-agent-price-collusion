@@ -1,0 +1,23 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Generated experiment material (kept locally unless deliberately released)
+data/raw/
+data/processed/
+artifacts/*
+!artifacts/.gitkeep
+logs/
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

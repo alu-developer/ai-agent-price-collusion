@@ -1,0 +1,11 @@
+[project]
+name = "price-agents"
+version = "0.1.0"
+description = "Reproducible experiments on AI-agent price coordination"
+requires-python = ">=3.11"
+
+[tool.ruff]
+line-length = 100
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
