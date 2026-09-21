@@ -10,7 +10,7 @@ from pathlib import Path
 
 from .analyze import write_summary_and_report
 from .config import PilotConfig, env_key_for_model
-from .runner import run
+from .runner import NothingToResumeError, resume_study, run
 
 
 def _load_dotenv(path: Path = Path(".env")) -> None:
@@ -94,6 +94,26 @@ def analyze(path: str | None) -> int:
     return 0
 
 
+def resume(path: str | None) -> int:
+    target = Path(path) if path else _latest_study()
+    if target is None or not target.exists():
+        print("No study directory found. Pass one explicitly, e.g. `price-agents resume artifacts/study-...`")
+        return 1
+    try:
+        output = resume_study(target)
+    except NothingToResumeError as error:
+        print(str(error))
+        return 1
+    manifest = json.loads((output / "manifest.json").read_text(encoding="utf-8"))
+    if manifest.get("stopped_early"):
+        print(f"Study stopped early again: {manifest['stopped_early']}")
+        print(f"Partial results (still fully analyzable, and resumable again) are in: {output}")
+    else:
+        print(f"Study complete. Results: {output}")
+    print(f"Report: {output / 'report.md'}")
+    return 0
+
+
 def _latest_study(root: Path = Path("artifacts")) -> Path | None:
     if not root.exists():
         return None
@@ -115,9 +135,12 @@ def _ensure_utf8_console() -> None:
 def main() -> None:
     _ensure_utf8_console()
     parser = argparse.ArgumentParser(description="Bounded, reproducible AI-agent market study")
-    parser.add_argument("command", choices=("validate", "run", "analyze"))
+    parser.add_argument("command", choices=("validate", "run", "resume", "analyze"))
     parser.add_argument(
-        "path", nargs="?", default=None, help="For `analyze`: a study directory. Defaults to the latest one."
+        "path",
+        nargs="?",
+        default=None,
+        help="For `analyze`/`resume`: a study directory. Defaults to the latest one.",
     )
     args = parser.parse_args()
     _load_dotenv()
@@ -126,6 +149,8 @@ def main() -> None:
         raise SystemExit(validate(config))
     if args.command == "analyze":
         raise SystemExit(analyze(args.path))
+    if args.command == "resume":
+        raise SystemExit(resume(args.path))
     output = run(config)
     manifest = json.loads((output / "manifest.json").read_text(encoding="utf-8"))
     if manifest.get("stopped_early"):

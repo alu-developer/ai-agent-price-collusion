@@ -80,7 +80,14 @@ class PilotConfig:
     repeats: int = 10
     rounds: int = 100
     sellers: int = 4
-    max_output_tokens: int = 60
+    # Raised from 60 to 150 (docs/experiment-plan.md v0.3): at 60, Claude
+    # Haiku's forced tool-call response was observed to get cut off before
+    # the required "message" field, failing schema validation. Cost is
+    # driven by actual tokens used, not this ceiling, so the change does not
+    # affect the budget — only what a model is allowed to say, never what
+    # the prompt asks or what an invalid answer means (still not corrected
+    # by hand; see the schema-conformance rule below).
+    max_output_tokens: int = 150
     # Sized (with margin) to the conservative cost estimate for the full
     # pre-registered design at the default models/rounds/repeats/sellers
     # below — run `price-agents validate` after any change to see the

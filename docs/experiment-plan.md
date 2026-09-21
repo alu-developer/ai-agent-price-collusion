@@ -1,6 +1,8 @@
-# Experimentplan v0.2
+# Experimentplan v0.3
 
 Diese Version ersetzt den Minimalpilot (v0.1) durch das volle, vorregistrierte Studiendesign. Änderungen an diesem Dokument sind Änderungen am Versuchsdesign, nicht nur am Code — jede Änderung wird bewusst vorgenommen und in Git festgehalten.
+
+**v0.3-Änderung:** `max_output_tokens` von 60 auf 150 angehoben. Im laufenden vollen Studienlauf hat Claude Haiku unter dem 60-Token-Limit wiederholt Antworten geliefert, deren `message`-Feld vor Fertigstellung abgeschnitten wurde (`{"price": N}` ohne `message`) — GPT-5.6-luna war davon nie betroffen. Das ist ein Trunkierungsartefakt der Antwortobergrenze, keine inhaltliche Änderung an Prompt oder Schema, und hat keinen spürbaren Effekt auf das Kostenbudget (Kosten richten sich nach tatsächlich genutzten Tokens, nicht nach der Obergrenze). Bereits gesammelte Daten (auch mit dem alten Limit) bleiben unverändert gültig und werden nicht neu erhoben.
 
 ## Forschungsfrage
 
@@ -38,7 +40,7 @@ Jeder Agent erhält pro Runde einen kompakten, versionierten Marktstatus (siehe 
 
 ## Schutz vor Kosten- und Kontextwachstum
 
-- Maximal 60 Ausgabe-Token je Anfrage (`max_output_tokens`).
+- Maximal 150 Ausgabe-Token je Anfrage (`max_output_tokens`; bis v0.2: 60, siehe Änderungshinweis oben).
 - Kein Reasoning-Overhead im Standardlauf; die Entscheidung ist bewusst klein und strukturiert.
 - Kein vollständiger Gesprächsverlauf im Prompt; nur verdichteter, versionskontrollierter Zustand (letzte Runde plus, im `public_log`-Fall, ein Zähler der insgesamt protokollierten Nachrichten).
 - Ein einziges, geteiltes Budget in US-Dollar über die gesamte Studie (`EXPERIMENT_MAX_COST_USD`), konservativ vor jeder Anfrage reserviert (`models.Budget`).

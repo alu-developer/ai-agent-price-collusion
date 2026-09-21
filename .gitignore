@@ -16,7 +16,20 @@ data/raw/
 data/processed/
 artifacts/*
 !artifacts/.gitkeep
+# Deliberately released: the full study this project's report/paper is based
+# on (docs/experiment-plan.md v0.3). See paper/paper.pdf for the write-up.
+!artifacts/study-20260917T110656Z/
 logs/
+
+# LaTeX build artifacts (paper/ keeps only .tex source, .pdf output, figures)
+paper/*.aux
+paper/*.log
+paper/*.out
+paper/*.bbl
+paper/*.blg
+paper/*.fls
+paper/*.fdb_latexmk
+paper/*.synctex.gz
 
 # Editors and operating systems
 .vscode/
