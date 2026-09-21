@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use this code, data, or paper, please cite it as below."
+title: "Communication Causes Price Coordination in LLM Seller Agents; Public Logging and Audits Suppress It, Unevenly Across Models"
+authors:
+  - family-names: Lux
+    given-names: Alois
+date-released: 2026-09-21
+url: "https://github.com/alu-developer/ai-agent-price-collusion"
+license: "MIT"
+license-url-data-and-paper: "https://creativecommons.org/licenses/by/4.0/"
+repository-code: "https://github.com/alu-developer/ai-agent-price-collusion"
+keywords:
+  - algorithmic collusion
+  - large language models
+  - multi-agent systems
+  - AI safety
+  - price coordination
+abstract: >
+  A controlled, pre-registered study of whether letting LLM-based seller
+  agents exchange short cheap-talk messages causes price coordination in a
+  repeated Bertrand-style market, and whether a permanent public log or
+  random audits suppress it. Tested identically across two model families
+  (GPT-5.6-luna, Claude Haiku 4.5). Full raw data, code, and paper included.

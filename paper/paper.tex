@@ -1,0 +1,158 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{natbib}
+\usepackage{hyperref}
+\usepackage{authblk}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[expansion=false]{microtype}
+
+\hypersetup{colorlinks=true, linkcolor=blue, citecolor=blue, urlcolor=blue}
+
+\title{Communication Causes Price Coordination in LLM Seller Agents;\\
+Public Logging and Audits Suppress It, Unevenly Across Models}
+
+\author[1]{Alois Lux}
+\affil[1]{Independent researcher}
+
+\date{September 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Autonomous pricing agents built on large language models (LLMs) are already deployed in real marketplaces. We ask whether letting such agents exchange short cheap-talk messages causes them to coordinate on higher prices in a controlled, repeated Bertrand-style market, and whether two common countermeasures --- a permanent public transcript, or unpredictable random audits with a stated penalty --- suppress it. Four sellers, instantiated independently each round from two model families (GPT-5.6-luna, Claude Haiku 4.5), set integer prices for 100 rounds, 10 repeats per condition. Allowing communication raises the mean market price significantly for both models (GPT: $+1.18$; Claude: $+1.48$; 95\% bootstrap CI excludes 0 in both). A permanent public log eliminates the effect for Claude (price returns to the exact competitive baseline, $\Delta=-1.48$, significant) but only partially and non-significantly for GPT ($\Delta=-0.61$, CI includes 0). Random audits reduce prices significantly for both models ($\Delta=-0.71$ GPT, $-1.09$ Claude) despite the audit's stated penalty condition never once being met in 2{,}000 audited rounds --- the reduction is attributable entirely to the threat, never to an experienced consequence. We disclose a mid-study methodological correction (an output-token cap that occasionally truncated Claude's structured responses) and report its measured footprint on the released data. All code, raw model outputs, and the full pre-registered protocol are public.
+\end{abstract}
+
+\section{Introduction}
+
+Sellers that set prices via large language models are no longer hypothetical: dynamic-pricing agents are deployed on real e-commerce and rental platforms today. A parallel literature already shows that pricing algorithms can learn tacit collusion without being told to, and without communicating at all: simple reinforcement-learning agents in a repeated Bertrand game converge on supra-competitive prices purely through repeated interaction \citep{calvano2020}. More recent work shows LLM-based pricing agents reach supra-competitive prices too, and that innocuous-looking prompt phrasing measurably shifts how collusive they become \citep{fish2024}. Outside the lab, the U.S. Department of Justice's 2024 suit against RealPage alleged that a shared, non-communicating pricing algorithm functioned as a coordination mechanism among competing landlords by pooling non-public pricing data, settled in late 2025 with restrictions on the practice \citep{usdoj2024realpage}.
+
+This paper asks a narrower, controlled question: does giving LLM seller agents an explicit \emph{channel to talk} --- rather than just a shared algorithm or shared data --- cause price coordination, and do two interventions that are cheap to add to any such system suppress it: (1) telling agents their messages are permanently logged and reviewable, and (2) unpredictable audits with a stated penalty for detected high-price convergence. We test this identically across two model families to check whether any effect is a property of ``LLM pricing agents'' in general or of one specific model.
+
+\section{Method}
+
+\subsection{Market}
+
+Four sellers post an integer price in $\{1,\dots,10\}$ for an identical, fully simulated good, once per round, for 100 rounds. Simulated buyers always take the lowest offered price; ties split demand equally. The competitive (Bertrand) benchmark is price $=1$, the bottom of the allowed range. Ten independent repeats run per condition per model, each with an independently seeded random stream, giving $n=10$ per cell for cross-condition comparisons.
+
+Each seller decision is an independent, stateless model call: no conversation history is kept (OpenAI: \texttt{store=false}; Anthropic: single-turn message, no prior assistant turns). Every prompt is reconstructed from scratch each round from a compact state summary --- round number, own seller ID, allowed price range, and \emph{only the immediately preceding round's} prices and (where applicable) messages. No agent ever has access to more than a one-round lookback; there is no hidden scratchpad or long-context memory carrying coordination across many rounds. All four conditions share one neutral base instruction: maximize your own simulated revenue over the run. No condition instructs agents to cooperate or to avoid cooperating.
+
+\subsection{Conditions}
+
+\begin{description}
+\item[no\_communication] Sellers decide independently; no messages of any kind.
+\item[communication] Before each round, sellers exchange one optional message ($\leq$20 words), visible only to sellers, alongside the previous round's prices.
+\item[public\_log] As \texttt{communication}, but sellers are told every message is written to a permanent, append-only, later-reviewable transcript, and are shown a running count of messages logged so far. Sellers never see the transcript's actual past content beyond the previous round --- the ``publicness'' is asserted, not a granted long-context capability.
+\item[audit] As \texttt{communication}, but each round is independently audited with probability $0.3$. If audited \emph{and} that round's prices show sustained high convergence (lowest price $\geq 7$ and spread $\leq 1$), every seller is told it received a simulated 10-point penalty; this is narrated back in the next round's prompt only, never subtracted from any tracked score.
+\end{description}
+
+\subsection{Models}
+
+GPT-5.6-luna (OpenAI Responses API, JSON-schema-constrained output) and Claude Haiku 4.5 (Anthropic Messages API, forced tool call with the same schema). Both are told to return exactly \texttt{\{price: integer, message: string\}}; a response that fails schema validation is retried up to three times with backoff and, if still invalid, logged as the run's stop reason --- never hand-corrected.
+
+\subsection{Analysis}
+
+Following \citet{calvano2020} and \citet{fish2024}, the unit of analysis is one repeat (one full 100-round market run), not the round: rounds within a repeat are not independent. Condition comparisons use a percentile bootstrap (2{,}000 resamples) for the difference in per-repeat means, reported as a 95\% CI; three comparisons are pre-specified per model: \texttt{communication} vs.\ \texttt{no\_communication}, \texttt{public\_log} vs.\ \texttt{communication}, and \texttt{audit} vs.\ \texttt{communication}. We do not correct for the resulting multiple comparisons (12 tests total across two models, three comparisons, two metrics); see Limitations.
+
+\section{Results}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{llrrrr}
+\toprule
+Model & Condition & $n$ & Mean price [95\% CI] & Overcharge & \% rounds tied \\
+\midrule
+GPT-5.6-luna & no\_communication & 10 & 1.000 [1.000, 1.000] & 0.000 & 95.6\% \\
+GPT-5.6-luna & communication      & 10 & 2.177 [1.988, 2.458] & 1.177 & 99.5\% \\
+GPT-5.6-luna & public\_log        & 10 & 1.565 [1.090, 2.231] & 0.565 & 97.5\% \\
+GPT-5.6-luna & audit              & 10 & 1.472 [1.181, 1.765] & 0.472 & 99.6\% \\
+\addlinespace
+Claude Haiku 4.5 & no\_communication & 10 & 1.000 [1.000, 1.000] & 0.000 & 99.9\% \\
+Claude Haiku 4.5 & communication     & 10 & 2.479 [1.897, 3.113] & 1.479 & 99.0\% \\
+Claude Haiku 4.5 & public\_log       & 10 & 1.000 [1.000, 1.000] & 0.000 & 99.8\% \\
+Claude Haiku 4.5 & audit             & 10 & 1.390 [1.097, 1.685] & 0.390 & 97.8\% \\
+\bottomrule
+\end{tabular}
+\caption{Mean market price (lowest of the four sellers' prices) per model $\times$ condition, with 95\% bootstrap CI over the 10 repeats. Overcharge = mean price $-$ 1 (competitive benchmark). \% rounds tied = share of rounds where all four sellers posted the same price.}
+\label{tab:main}
+\end{table}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.75\textwidth]{figures/mean_price_by_condition.pdf}
+\caption{Mean market price by condition and model, with 95\% bootstrap CI. The dashed line marks the competitive benchmark (price $=1$).}
+\label{fig:main}
+\end{figure}
+
+\subsection{Communication causes coordination, for both models}
+Allowing cheap talk raises the mean market price significantly relative to the no-communication baseline for both models: GPT-5.6-luna, $\Delta = +1.177$ [0.988, 1.458]; Claude Haiku 4.5, $\Delta = +1.479$ [0.896, 2.088]. Both intervals exclude 0. The \texttt{no\_communication} condition itself shows \emph{zero} variance across all 2{,}000 rounds and both models: the market price is exactly 1 in every single round. Full unraveling to the competitive price occurs reliably even without any coordination channel.
+
+\subsection{A public log removes the effect for one model, not conclusively for the other}
+For Claude Haiku 4.5, \texttt{public\_log} drives the price back to exactly the competitive baseline (1.000, zero variance), a highly significant reduction from \texttt{communication} ($\Delta = -1.479$ [$-2.116$, $-0.872$]). For GPT-5.6-luna the point estimate also drops (2.177 $\to$ 1.565) but the interval includes 0 ($\Delta = -0.612$ [$-1.182$, 0.059]) --- in this sample, we cannot distinguish it from no effect at the pre-specified 95\% threshold.
+
+\subsection{Audits reduce coordination for both models, without ever imposing the stated penalty}
+\texttt{audit} significantly lowers price relative to \texttt{communication} for both models: GPT-5.6-luna, $\Delta = -0.705$ [$-1.079$, $-0.327$]; Claude Haiku 4.5, $\Delta = -1.089$ [$-1.789$, $-0.404$]. We checked every one of the 2{,}000 audit-condition rounds directly: audits were drawn at the designed $\approx 30\%$ rate (296--297 of 1{,}000 rounds per model), but the penalty's trigger condition (lowest price $\geq 7$, spread $\leq 1$) was never once satisfied --- the highest lowest-price ever observed in this condition was 2, far short of the threshold of 7. The observed reduction is therefore attributable entirely to the stated possibility of a penalty, never to an experienced one.
+
+\subsection{Model asymmetry is condition-specific, not a uniform trait}
+Claude Haiku 4.5 is not uniformly ``more competitive'' than GPT-5.6-luna. Under raw \texttt{communication} it is the \emph{more} collusive of the two (2.479 vs.\ 2.177), and it uses individually higher opening asks less often than GPT: across all conditions, at least one seller's individual asking price reached the price ceiling of 10 for GPT-5.6-luna, while Claude Haiku 4.5's individual asks never exceeded 5. Under both interventions, however, Claude responds far more sharply --- fully to baseline under \texttt{public\_log}, and to a lower level under \texttt{audit} (1.390 vs.\ 1.472) --- than GPT does. The pattern is best read as a difference in \emph{sensitivity to the stated countermeasure}, not a difference in baseline cooperativeness.
+
+\section{Limitations}
+
+\begin{description}
+\item[Toy simulation.] A ten-value integer price space, four sellers, and 100-round runs are a deliberately small testbed for studying the mechanism, not a model of any real market. Results are evidence for a hypothesis about agent behavior, not a measurement of real-world collusion risk or a statement about antitrust enforcement.
+
+\item[Mid-study token-budget correction.] The pre-registered output cap was 60 tokens (chosen to bound cost and discourage long hidden reasoning). Partway through data collection, Claude Haiku 4.5 began failing structured-output validation because its \texttt{message} field was being truncated before completion; GPT-5.6-luna never failed this way. We measured why: across all conditions and both models, GPT-5.6-luna's completions used at most 44 output tokens (mean 18--34 depending on condition), while Claude Haiku 4.5's used up to 71 (mean 48--63) --- roughly twice GPT's token footprint for the same schema and message-length limit. We raised the cap to 150 tokens and continued. Because every invalid or truncated response is rejected by schema validation before being written to disk (never hand-corrected, never partially kept), no released data point is truncated or malformed. However, this does mean GPT-5.6-luna's entire dataset was collected under the original 60-token cap, while Claude Haiku 4.5's \texttt{communication}, \texttt{public\_log}, and \texttt{audit} data (though not \texttt{no\_communication}, which needs no message and was collected before the correction) were collected entirely under the raised 150-token cap. We cannot rule out that this operating difference, rather than or in addition to genuine model behavior, contributes to the cross-model differences reported above. The full per-condition token-usage statistics are given above so readers can judge this directly; the change itself is version-controlled (\texttt{docs/experiment-plan.md}, v0.3).
+
+\item[No correction for multiple comparisons.] Twelve bootstrap comparisons are reported (2 models $\times$ 3 condition contrasts $\times$ 2 metrics); no Bonferroni-type correction is applied. Treat individual $p$-analogue claims accordingly.
+
+\item[The audit penalty is narrative only.] No tracked score is ever decremented; the "penalty" exists purely as text shown in the following round's prompt. The measured effect is therefore a test of deterrence-by-announcement, not deterrence-by-experienced-loss.
+
+\item[The public log is asserted, not granted.] Agents are told messages are permanently logged, and shown a running count, but never given read access to the actual transcript beyond the immediately preceding round. The measured effect is a test of the claim of permanence, not of genuine long-context accountability.
+
+\item[Scope.] Two models, one seed schedule, $n=10$ repeats per cell. This is a first pass, not a survey of models or market structures.
+\end{description}
+
+\section{Implications}
+
+Within this simulation, removing the communication channel entirely was the only intervention that reliably reproduced the exact competitive outcome for both models, with zero variance. Where communication cannot be removed, both a public, permanent log and unpredictable audits reduced --- but for at least one model and one intervention (GPT-5.6-luna under \texttt{public\_log}) did not conclusively eliminate --- price coordination, and neither intervention's effect size was consistent across the two models tested. Notably, the audit intervention worked without its stated penalty ever actually firing, suggesting the credible announcement of a consequence can have an effect independent of whether the consequence is ever realized, at least at this scale and time horizon; whether that holds if the audited system operates long enough to notice the penalty never lands is untested here.
+
+\section{Reproducibility, Data, and Code}
+
+All code, the pre-registered experimental protocol (\texttt{docs/experiment-plan.md}), the exact prompts, every raw model decision (price, message, full raw response, token counts, cost) and every round's outcome are released at:
+
+\begin{center}
+\url{https://github.com/alu-developer/ai-agent-price-collusion}
+\end{center}
+
+Each run's directory records its full configuration, a SHA-256 fingerprint of the exact prompt template used, and whether/why it stopped early, so any reported number can be traced back to the exact raw rows it was computed from and recomputed independently (\texttt{price-agents analyze}). Code is released under the MIT license; the paper text and released data under CC-BY-4.0.
+
+\section*{Author Contributions and AI-Assistance Disclosure}
+
+Alois Lux conceived the research question, made every experimental-design decision recorded in this paper (condition design carried over from the project's pre-registration, the decision to raise the output-token cap and the cost budget mid-study, and the decision to publish), and reviewed and approved the final results, limitations, and this manuscript. Claude (Anthropic, model Claude Sonnet 5), operating as a coding agent under Alois Lux's direction, implemented the full codebase (experiment runner, model adapters, checkpointing and resume logic, statistical analysis), executed the experiment runs, performed the verification checks reported in this paper (including the token-usage and audit-trigger audits described above), generated Figure~\ref{fig:main}, and drafted this manuscript's text, all subject to review, correction, and final approval by Alois Lux. No claim in this paper was accepted without being checked against the raw released data.
+
+\bibliographystyle{plainnat}
+\begin{thebibliography}{9}
+
+\bibitem[Calvano et al.(2020)]{calvano2020}
+Calvano, E., Calzolari, G., Denicol\`o, V., and Pastorello, S. (2020).
+\newblock Artificial Intelligence, Algorithmic Pricing, and Collusion.
+\newblock \emph{American Economic Review}, 110(10), 3267--3297.
+
+\bibitem[Fish et al.(2024)]{fish2024}
+Fish, S., Gonczarowski, Y. A., and Shorrer, R. I. (2024).
+\newblock Algorithmic Collusion by Large Language Models.
+\newblock \emph{arXiv preprint arXiv:2404.00806}.
+
+\bibitem[U.S. DOJ(2024)]{usdoj2024realpage}
+United States Department of Justice, et al.\ v.\ RealPage, Inc.
+\newblock Civil action filed August 23, 2024, U.S. District Court for the Middle District of North Carolina; settled November 24, 2025.
+
+\end{thebibliography}
+
+\end{document}
