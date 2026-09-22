@@ -5,6 +5,7 @@
 \usepackage{booktabs}
 \usepackage{graphicx}
 \usepackage{natbib}
+\usepackage{placeins}
 \usepackage{hyperref}
 \usepackage{authblk}
 \usepackage[T1]{fontenc}
@@ -25,7 +26,7 @@ Public Logging and Audits Suppress It, Unevenly Across Models}
 \maketitle
 
 \begin{abstract}
-Algorithmic pricing tools already coordinate prices among real, otherwise-independent sellers without those sellers directly communicating \citep{usdoj2024realpage}; large language models (LLMs) are a natural next step for such tools, and are already being explored as autonomous pricing agents. We ask a narrower question: does giving such agents an explicit \emph{channel to talk} --- short cheap-talk messages, defined below --- cause them to coordinate on higher prices in a controlled, repeated Bertrand-style market (defined below), and whether two common countermeasures --- a permanent public transcript, or unpredictable random audits with a stated penalty --- suppress it. Four sellers, instantiated independently each round from two model families (GPT-5.6-luna, Claude Haiku 4.5), set integer prices for 100 rounds, 10 repeats per condition. Allowing communication raises the mean market price significantly for both models (GPT: $+1.18$; Claude: $+1.48$; 95\% bootstrap CI excludes 0 in both). A permanent public log eliminates the effect for Claude (price returns to the exact competitive baseline, $\Delta=-1.48$, significant) but only partially and non-significantly for GPT ($\Delta=-0.61$, CI includes 0). Random audits reduce prices significantly for both models ($\Delta=-0.71$ GPT, $-1.09$ Claude) despite the audit's stated penalty condition never once being met in 2{,}000 audited rounds --- the reduction is attributable entirely to the threat, never to an experienced consequence. We disclose a mid-study methodological correction (an output-token cap that occasionally truncated Claude's structured responses) and report its measured footprint on the released data. All code, raw model outputs, and the full pre-registered protocol are public.
+Algorithmic pricing tools already coordinate prices among real, otherwise-independent sellers without those sellers directly communicating \citep{usdoj2024realpage}. We ask a narrower question: does giving such agents an explicit \emph{channel to talk} --- short cheap-talk messages, defined below --- cause them to coordinate on higher prices in a controlled, repeated Bertrand-style market (defined below), and whether two common countermeasures --- a permanent public transcript, or unpredictable random audits with a stated penalty --- suppress it. Four sellers, instantiated independently each round from two model families (GPT-5.6-luna, Claude Haiku 4.5), set integer prices for 100 rounds, 10 repeats per condition. Allowing communication raises the mean market price significantly for both models (GPT: $+1.18$; Claude: $+1.48$; 95\% bootstrap CI excludes 0 in both). A permanent public log eliminates the effect for Claude (price returns to the exact competitive baseline, $\Delta=-1.48$, significant) but only partially and non-significantly for GPT ($\Delta=-0.61$, CI includes 0). Random audits reduce prices significantly for both models ($\Delta=-0.71$ GPT, $-1.09$ Claude) despite the audit's stated penalty condition never once being met, in any of the roughly 600 rounds actually drawn for audit across both models --- the reduction is attributable entirely to the threat, never to an experienced consequence. We disclose a mid-study methodological correction (an output-token cap that occasionally truncated Claude's structured responses) and report its measured footprint on the released data. All code, raw model outputs, and the full pre-registered protocol are public.
 \end{abstract}
 
 \section{Introduction}
@@ -69,7 +70,7 @@ Condition comparisons use a percentile bootstrap: for a given pair of cells (e.g
 \section{Results}
 \label{sec:results}
 
-\begin{table}[h]
+\begin{table}[t]
 \centering
 \small
 \begin{tabular}{llrrrr}
@@ -91,12 +92,14 @@ Claude Haiku 4.5 & audit             & 10 & 1.390 [1.097, 1.685] & 0.390 & 97.8\
 \label{tab:main}
 \end{table}
 
-\begin{figure}[h]
+\begin{figure}[t]
 \centering
 \includegraphics[width=0.75\textwidth]{figures/mean_price_by_condition.pdf}
 \caption{Mean market price by condition and model, with 95\% bootstrap CI. The dashed line marks the competitive benchmark (price $=1$).}
 \label{fig:main}
 \end{figure}
+
+\FloatBarrier
 
 \subsection{Communication causes coordination, for both models}
 Allowing cheap talk raises the mean market price significantly relative to the no-communication baseline for both models: GPT-5.6-luna, $\Delta = +1.177$ [0.988, 1.458]; Claude Haiku 4.5, $\Delta = +1.479$ [0.896, 2.088]. Both intervals exclude 0. The \texttt{no\_communication} condition itself shows \emph{zero} variance across all 2{,}000 rounds and both models: the market price is exactly 1 in every single round. This is not a foregone conclusion --- an LLM playing this role could plausibly anchor on a higher price, drift, or behave noisily instead --- so exact, zero-variance convergence to the theoretical Bertrand-competitive price, for both model families independently, is itself a non-trivial empirical result, not an artifact of the setup.
@@ -105,7 +108,7 @@ Allowing cheap talk raises the mean market price significantly relative to the n
 For Claude Haiku 4.5, \texttt{public\_log} drives the price back to exactly the competitive baseline (1.000, zero variance), a highly significant reduction from \texttt{communication} ($\Delta = -1.479$ [$-2.116$, $-0.872$]). For GPT-5.6-luna the point estimate also drops (2.177 $\to$ 1.565) but the interval includes 0 ($\Delta = -0.612$ [$-1.182$, 0.059]) --- in this sample, we cannot distinguish it from no effect at the pre-specified 95\% threshold.
 
 \subsection{Audits reduce coordination for both models, without ever imposing the stated penalty}
-\texttt{audit} significantly lowers price relative to \texttt{communication} for both models: GPT-5.6-luna, $\Delta = -0.705$ [$-1.079$, $-0.327$]; Claude Haiku 4.5, $\Delta = -1.089$ [$-1.789$, $-0.404$]. We checked every one of the 2{,}000 audit-condition rounds directly: audits were drawn at the designed $\approx 30\%$ rate (296--297 of 1{,}000 rounds per model), but the penalty's trigger condition (lowest price $\geq 7$, spread $\leq 1$) was never once satisfied --- the highest lowest-price ever observed in this condition was 2, far short of the threshold of 7. The observed reduction is therefore attributable entirely to the stated possibility of a penalty, never to an experienced one.
+\texttt{audit} significantly lowers price relative to \texttt{communication} for both models: GPT-5.6-luna, $\Delta = -0.705$ [$-1.079$, $-0.327$]; Claude Haiku 4.5, $\Delta = -1.089$ [$-1.789$, $-0.404$]. We checked every one of the 2{,}000 rounds run under the \texttt{audit} condition directly (not all of them were actually audited): the independent per-round audit draw hit at the designed $\approx 30\%$ rate, 296 of 1{,}000 rounds for GPT-5.6-luna and 297 of 1{,}000 for Claude Haiku 4.5. Of those $\approx 600$ audited rounds, the penalty's trigger condition (lowest price $\geq 7$, spread $\leq 1$) was never once satisfied --- the highest lowest-price ever observed anywhere in this condition was 2, far short of the threshold of 7. The observed reduction is therefore attributable entirely to the stated possibility of a penalty, never to an experienced one.
 
 \section{Limitations}
 
@@ -130,6 +133,10 @@ Within this simulation, removing the communication channel entirely was the only
 \section{Reproducibility, Data, and Code}
 
 All code, the pre-registered experimental protocol (\texttt{docs/experiment-plan.md}), the exact prompts, every raw model decision (price, message, full raw response, token counts, cost) and every round's outcome are released at:
+
+\vspace{0.5em}
+\noindent\emph{On ``pre-registered'':} here this means only that the design, conditions, and comparisons were written down and committed to the repository's git history before the full study was run, not that the design was filed with an external registry. Every version of the protocol --- including the v0.1 minimal pilot and the v0.2 design this study actually ran, both superseded by the v0.3 correction described in Limitations --- remains individually retrievable from git history (\texttt{git log -{}-follow docs/experiment-plan.md}), not only the current text.
+\vspace{0.5em}
 
 \begin{center}
 \url{https://github.com/alu-developer/ai-agent-price-collusion}
