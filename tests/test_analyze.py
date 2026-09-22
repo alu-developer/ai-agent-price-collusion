@@ -117,7 +117,7 @@ class WriteSummaryAndReportTests(unittest.TestCase):
             self.assertTrue((output / "summary.csv").exists())
             self.assertTrue((output / "condition_summary.csv").exists())
             report = (output / "report.md").read_text(encoding="utf-8")
-            self.assertIn("gestoppt", report)
+            self.assertIn("stopped early", report)
             self.assertIn("no_communication", report)
             self.assertIn("communication", report)
 

@@ -108,7 +108,7 @@ class RunnerSmokeTest(unittest.TestCase):
             self.assertIn("stopped_early", manifest_text)
             self.assertIn("budget would be exceeded", manifest_text.lower())
             report = (output / "report.md").read_text(encoding="utf-8")
-            self.assertIn("gestoppt", report)
+            self.assertIn("stopped early", report)
 
     def test_transient_error_is_retried_not_fatal(self) -> None:
         config = PilotConfig(models=("fake-model",), repeats=1, rounds=2, sellers=3, max_cost_usd=100.0)
